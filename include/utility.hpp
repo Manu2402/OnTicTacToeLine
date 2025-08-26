@@ -19,7 +19,7 @@ namespace Utility
     public:
         NetworkException(const std::string& message) : std::runtime_error(message) { }
 
-        // "noexcept" --> no exception in the function member
+        // "noexcept" --> no exception in the function member.
         const char* what() const noexcept override;
 
     private:

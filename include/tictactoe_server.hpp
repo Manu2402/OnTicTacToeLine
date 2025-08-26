@@ -86,7 +86,7 @@ namespace TTTServer
             }
         };
         
-        Server(const char* ipAddress = "192.168.1.106", const int port = 9999, const std::uint32_t timeout = 1000);
+        Server(const char* ipAddress = "192.168.1.102", const int port = 9999, const std::uint32_t timeout = 1000);
 
         void Kick(const Sender& sender);
         void DestroyRoom(const Room& room);
