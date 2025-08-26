@@ -247,6 +247,7 @@ void Client::JoinCommand(const int currentCommandID)
     const char* joinPacket = joinInfo.c_str();  
 
     int sentBytes = sendto(socketID, joinPacket, joinPacketSize, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    
     std::cout << "You have attempted to connect to the server!\n";
 }
 
@@ -371,8 +372,6 @@ int main(int argc, char** argv)
 {
     Client client = {};
     client.Run();
-
-    client.~Client();
 
     return EXIT_SUCCESS;
 }

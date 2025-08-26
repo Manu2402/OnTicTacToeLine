@@ -1,5 +1,7 @@
 #include <tictactoe_server.hpp>
 
+#include <iostream>
+
 Server::Server(const char* ipAddress, const int port, const std::uint32_t timeout)
 {
 #ifdef _WIN32
@@ -187,6 +189,9 @@ void Server::Tick()
     int senderInputSize = sizeof(senderInput);
 
     int len = recvfrom(this->socketID, buffer, bufferSize, 0, reinterpret_cast<sockaddr*>(&senderInput), &senderInputSize);
+    
+    std::cout << len;
+
     if (len < 0) return;
 
     if (len < headerBytesAmount)
