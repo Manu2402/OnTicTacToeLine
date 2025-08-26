@@ -214,24 +214,34 @@ void Client::SendData()
 {
     PrintCommands();
 
+    std::string stringCurrentCommandID;
     int currentCommandID, sentBytes;
     Command currentCommand;
 
     while (running)
     {
         std::cout << "\nInsert a command: ";
-        std::cin >> currentCommandID;  
-        currentCommand = static_cast<Command>(currentCommandID);
+        std::cin >> stringCurrentCommandID;  
 
-        // Command '3' is bound to the move, but the client activates this command by clicking on the cells.
-        // So, the command '3' is not allowed! The command '4' is implicit when the window is closed.
-        if ((currentCommand >= 0 && currentCommand < (commandFunctionsSnd.size() - 1)))
+        if (stringCurrentCommandID.size() == 1)
         {
-            this->commandFunctionsSnd[currentCommand](currentCommandID);
-            continue;
-        }
+            currentCommandID = stringCurrentCommandID[0] - '0';
+            currentCommand = static_cast<Command>(currentCommandID);
+            
+            // Command '3' is bound to the move, but the client activates this command by clicking on the cells.
+            // So, the command '3' is not allowed! The command '4' is implicit when the window is closed.
+            if ((currentCommand >= 0 && currentCommand < (commandFunctionsSnd.size() - 1)))
+            {
+                this->commandFunctionsSnd[currentCommand](currentCommandID);
+                continue;
+            }
 
-        std::cout << "Invalid command!\n";
+            std::cout << "Invalid command!\n";
+        }
+        else
+        {
+            std::cout << "Invalid command!\n";
+        }
     }
 }
 
@@ -247,7 +257,6 @@ void Client::JoinCommand(const int currentCommandID)
     const char* joinPacket = joinInfo.c_str();  
 
     int sentBytes = sendto(socketID, joinPacket, joinPacketSize, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
-    
     std::cout << "You have attempted to connect to the server!\n";
 }
 
@@ -301,7 +310,7 @@ void Client::AnnounceRoomCommand(Byte* buffer, const int len)
     std::memcpy(&roomIDBytes, &buffer[headerBytesAmount + roomIDLength], roomIDLengthValue);
 
     int roomID = std::stoi(roomIDBytes);
-    std::cout << "\nAnnouncing room " << roomID << "\n";
+    std::cout << "\nAnnouncing room " << roomID;
 }
 
 void Client::UpdateFieldCommand(Byte* buffer, const int len)
@@ -370,6 +379,7 @@ void Client::PrintCommands() const
 
 int main(int argc, char** argv)
 {
+    
     Client client = {};
     client.Run();
 

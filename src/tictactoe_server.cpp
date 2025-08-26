@@ -141,6 +141,7 @@ void Server::DestroyRoom(const Room& room)
     }
 
     std::cout << "Room with ID: " << room.GetRoomID() << " has been destroyed!\n";
+    openedRooms.erase(room.GetRoomID());
     rooms.erase(room.GetRoomID());
 }
 
@@ -252,8 +253,8 @@ void Server::Announces(const int roomID, const bool toRemove)
     for (auto& sender : this->players)
     {
         const Player& currentPlayer = sender.second;
-        int roomID = currentPlayer.GetCurrentRoom().first;
-        if (roomID > 0) continue;
+        int localRoomID = currentPlayer.GetCurrentRoom().first;
+        if (localRoomID > 0) continue;
 
         this->SendAnnounce(sender.first);
     }

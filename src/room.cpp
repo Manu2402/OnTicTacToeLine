@@ -28,10 +28,10 @@ namespace TTTGame
 
             if (distribution(generator)) this->turnOf = owner;
             else this->turnOf = challenger;
+
+            std::cout << "Turn of \"" << this->turnOf->GetName() << "\"!\n";
         }
-
-        std::cout << "Turn of \"" << this->turnOf->GetName() << "\"!\n";
-
+        
         this->playField.fill(nullptr);
         this->winner = nullptr;
     }
