@@ -87,7 +87,7 @@ namespace TTTClient
     class Client
     {
     public:
-        Client(const char* ipAddress = "127.0.0.1", const int port = 9999);
+        Client(const char* ipAddress = "77.32.107.199", const int port = 9999);
         ~Client();
 
         void Run();

@@ -189,9 +189,6 @@ void Server::Tick()
     int senderInputSize = sizeof(senderInput);
 
     int len = recvfrom(this->socketID, buffer, bufferSize, 0, reinterpret_cast<sockaddr*>(&senderInput), &senderInputSize);
-    
-    std::cout << len;
-
     if (len < 0) return;
 
     if (len < headerBytesAmount)
