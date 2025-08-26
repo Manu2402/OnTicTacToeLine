@@ -1,6 +1,6 @@
 #include <tictactoe_client.hpp>
 
-Client::Client(const char* ipAddress, const int port)
+Client::Client(const char* ip_address, const int port)
 {
 #ifdef _WIN32
     try
@@ -18,8 +18,8 @@ Client::Client(const char* ipAddress, const int port)
 #endif
     try
     {
-        this->socketID = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        if (this->socketID < 0)
+        this->socket_id = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (this->socket_id < 0)
         {
             throw NetworkException("ERROR: Unable to initialize the UDP socket!\n");
         }
@@ -29,42 +29,39 @@ Client::Client(const char* ipAddress, const int port)
         std::cout << exception.what() << "\n";
     }
 
-    inet_pton(AF_INET, ipAddress, &this->sin.sin_addr);
+    inet_pton(AF_INET, ip_address, &this->sin.sin_addr);
     this->sin.sin_family = AF_INET;
     this->sin.sin_port = htons(port);
 
     // --------------------------------------------------------------------------------------------
 
-    this->commandFunctionsSnd[Command::JOIN] = [this](const int currentCommandID) { this->JoinCommand(currentCommandID); };
-    this->commandFunctionsSnd[Command::CREATE_ROOM] = [this](const int currentCommandID) { this->CreateRoomCommand(currentCommandID); };
-    this->commandFunctionsSnd[Command::CHALLENGE] = [this](const int currentCommandID) { this->ChallengeCommand(currentCommandID); };
-    this->commandFunctionsSnd[Command::QUIT] = [this](const int currentCommandID) { this->QuitCommand(currentCommandID); };
+    this->command_functions_snd[Command::JOIN] = [this](const int currentCommandID) { this->JoinCommand(currentCommandID); };
+    this->command_functions_snd[Command::CREATE_ROOM] = [this](const int currentCommandID) { this->CreateRoomCommand(currentCommandID); };
+    this->command_functions_snd[Command::CHALLENGE] = [this](const int currentCommandID) { this->ChallengeCommand(currentCommandID); };
+    this->command_functions_snd[Command::QUIT] = [this](const int currentCommandID) { this->QuitCommand(currentCommandID); };
 
-    this->commandFunctionsRcv[Command::ANNOUNCE_ROOM] = [this](Byte* buffer, const int len) { this->AnnounceRoomCommand(buffer, len); };
-    this->commandFunctionsRcv[Command::START_GAME] = [this](Byte* buffer, const int len) { this->StartGameCommand(buffer, len); };
-    this->commandFunctionsRcv[Command::UPDATE_FIELD] = [this](Byte* buffer, const int len) { this->UpdateFieldCommand(buffer, len); };
-    this->commandFunctionsRcv[Command::RESET_CLIENT] = [this](Byte* buffer, const int len) { this->ResetClientCommand(buffer, len); };
+    this->command_functions_rcv[Command::ANNOUNCE_ROOM] = [this](char* buffer, const int len) { this->AnnounceRoomCommand(buffer, len); };
+    this->command_functions_rcv[Command::START_GAME] = [this](char* buffer, const int len) { this->StartGameCommand(buffer, len); };
+    this->command_functions_rcv[Command::UPDATE_FIELD] = [this](char* buffer, const int len) { this->UpdateFieldCommand(buffer, len); };
+    this->command_functions_rcv[Command::RESET_CLIENT] = [this](char* buffer, const int len) { this->ResetClientCommand(buffer, len); };
 
     // --------------------------------------------------------------------------------------------
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
-        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
-        this->~Client();
+        throw std::runtime_error(std::string("Unable to initialize SDL: %s", SDL_GetError()));
     }
 
     this->window = SDL_CreateWindow("TicTacToe", 100, 100, 512, 512, 0);
     if (!window)
     {
-        SDL_Log("Unable to create window: %s", SDL_GetError());
-        this->~Client();
+        throw std::runtime_error(std::string("Unable to create window: %s", SDL_GetError()));
     }
 
     this->renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer)
     {
-        SDL_Log("Unable to create renderer: %s", SDL_GetError());
-        this->~Client();
+        throw std::runtime_error(std::string("Unable to create renderer: %s", SDL_GetError()));
     }
 
     this->InitSprites();
@@ -75,8 +72,8 @@ Client::Client(const char* ipAddress, const int port)
 Client::~Client()
 {    
     // Detach these threads from the main thread. The OS will handle they life cycle.
-    sendThread.detach();
-    recvThread.detach();
+    send_thread.detach();
+    recv_thread.detach();
 
     if (this->renderer) SDL_DestroyRenderer(renderer);
     if (this->window) SDL_DestroyWindow(window);
@@ -85,9 +82,9 @@ Client::~Client()
 
 void Client::Run()
 {
-    // Thread init.
-    this->recvThread = std::thread(&Client::ReceiveData, this);
-    this->sendThread = std::thread(&Client::SendData, this);
+    // Threads init.
+    this->recv_thread = std::thread(&Client::ReceiveData, this);
+    this->send_thread = std::thread(&Client::SendData, this);
 
     while (running)
     {
@@ -97,29 +94,29 @@ void Client::Run()
             if (event.type == SDL_QUIT)
             {
                 running = false;
-                this->commandFunctionsSnd[Command::QUIT](static_cast<int>(Command::QUIT));
+                this->command_functions_snd[Command::QUIT](static_cast<int>(Command::QUIT));
 
                 return;
             }
 
             if (event.type == SDL_MOUSEBUTTONDOWN)
             {
-                int clickedCell = ClickedOnWhatCell(&event);
-                if (clickedCell < 0) continue;
+                int clicked_cell = ClickedOnWhichCell(&event);
+                if (clicked_cell < 0) continue;
 
-                Header header;
+                header_t header;
                 header.rid = 0;
                 header.command = Command::MOVE;
 
-                std::string moveInfo(std::to_string(header.rid) + std::to_string(static_cast<int>(header.command)) + std::to_string(clickedCell));
-                const char* movePacket = moveInfo.c_str();  
+                std::string move_info(std::to_string(header.rid) + std::to_string(static_cast<int>(header.command)) + std::to_string(clicked_cell));
+                const char* move_packet = move_info.c_str();  
 
-                int sent_bytes = sendto(this->socketID, movePacket, strlen(movePacket), 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+                int sent_bytes = sendto(this->socket_id, move_packet, strlen(move_packet), 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
                 break;
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White.
         SDL_RenderClear(renderer);
             
         for (NaiveSDLTexture& sprite : this->sprites)
@@ -134,49 +131,49 @@ void Client::Run()
 
 void Client::InitSprites()
 {
-    this->sprites.reserve(spritesAmount);
+    this->sprites.reserve(sprites_amount);
 
     int width, height, channels;
     unsigned char* pixels = stbi_load("resources/tictactoe_blocked_grid.png", &width, &height, &channels, 4);
-    SDL_Texture* blockedGridTexture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
-    SDL_UpdateTexture(blockedGridTexture, nullptr, pixels, width * 4);  
-    textures[BLOCKED_GRID] = blockedGridTexture;
+    SDL_Texture* blocked_grid_texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_UpdateTexture(blocked_grid_texture, nullptr, pixels, width * 4);
+    textures[BLOCKED_GRID] = blocked_grid_texture;
     SDL_Rect rect = { 0, 0, width, height };
-    sprites.push_back(NaiveSDLTexture(blockedGridTexture, rect));
+    sprites.push_back(NaiveSDLTexture(blocked_grid_texture, rect));
 
     pixels = stbi_load("resources/tictactoe_play_grid.png", &width, &height, &channels, 4);
-    SDL_Texture* gridTexture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
-    SDL_UpdateTexture(gridTexture, nullptr, pixels, width * 4);
-    textures[PLAY_GRID] = gridTexture;
+    SDL_Texture* grid_texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_UpdateTexture(grid_texture, nullptr, pixels, width * 4);
+    textures[PLAY_GRID] = grid_texture;
     rect = { 0, 0, width, height };
     sprites.push_back(NaiveSDLTexture(nullptr, rect));
 
     pixels = stbi_load("resources/x_sign.png", &width, &height, &channels, 4);
-    SDL_Texture* xGameTexture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
-    SDL_UpdateTexture(xGameTexture, nullptr, pixels, width * 4);
-    textures[X_SIGN] = xGameTexture;
+    SDL_Texture* x_game_texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_UpdateTexture(x_game_texture, nullptr, pixels, width * 4);
+    textures[X_SIGN] = x_game_texture;
 
     pixels = stbi_load("resources/o_sign.png", &width, &height, &channels, 4);
-    SDL_Texture* oGameTexture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
-    SDL_UpdateTexture(oGameTexture, nullptr, pixels, width * 4);
-    textures[O_SIGN] = oGameTexture;
+    SDL_Texture* o_game_texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_UpdateTexture(o_game_texture, nullptr, pixels, width * 4);
+    textures[O_SIGN] = o_game_texture;
 
-    for (size_t i = 0; i < spritesCellAmount; i++)
+    for (size_t i = 0; i < sprites_cell_amount; i++)
     {
-        SDL_Rect rect = { cellCoordinates[i].first, cellCoordinates[i].second, symbolsTextureSize.first, symbolsTextureSize.second };
+        SDL_Rect rect = { cell_coordinates[i].first, cell_coordinates[i].second, symbols_texture_size.first, symbols_texture_size.second };
         sprites.push_back(NaiveSDLTexture(nullptr, rect));
     }
     
     stbi_image_free(pixels);
 }
 
-int Client::ClickedOnWhatCell(SDL_Event* event)
+int Client::ClickedOnWhichCell(SDL_Event* event)
 {
-    for (size_t i = startingSpriteCellsIndex; i < spritesAmount; i++)
+    for (size_t i = starting_sprite_cells_index; i < sprites_amount; i++)
     {
         if (event->button.x >= sprites[i].GetTextureBox().x && event->button.x < (sprites[i].GetTextureBox().x + sprites[i].GetTextureBox().w) && event->button.y >= sprites[i].GetTextureBox().y && event->button.y < (sprites[i].GetTextureBox().y + sprites[i].GetTextureBox().h))
         {
-            return i - startingSpriteCellsIndex;
+            return i - starting_sprite_cells_index;
         }
     }
 
@@ -187,17 +184,17 @@ int Client::ClickedOnWhatCell(SDL_Event* event)
 
 void Client::ReceiveData()
 {
-    Header header; 
-    Byte buffer[bufferSize];
+    header_t header; 
+    char buffer[buffer_size];
     sockaddr_in sender_in;
     int sender_in_size = sizeof(sender_in); 
 
     while (running)
     {
-        int len = recvfrom(this->socketID, buffer, bufferSize, 0, reinterpret_cast<sockaddr*>(&sender_in), &sender_in_size); 
+        int len = recvfrom(this->socket_id, buffer, buffer_size, 0, reinterpret_cast<sockaddr*>(&sender_in), &sender_in_size); 
         if (len < 0) continue;
 
-        if (len < headerBytesAmount)
+        if (len < header_bytes_amount)
         {
             std::cout << "Invalid packet size: " << len << " bytes!\n";
             continue;
@@ -206,7 +203,7 @@ void Client::ReceiveData()
         header.rid = buffer[0] - '0';
         header.command = static_cast<Command>(buffer[1] - '0');
 
-        this->commandFunctionsRcv[header.command](buffer, len);  
+        this->command_functions_rcv[header.command](buffer, len);
     }
 }
 
@@ -214,25 +211,25 @@ void Client::SendData()
 {
     PrintCommands();
 
-    std::string stringCurrentCommandID;
-    int currentCommandID, sentBytes;
-    Command currentCommand;
+    std::string current_command_id_str;
+    int current_command_id, sent_bytes;
+    Command current_command;
 
     while (running)
     {
         std::cout << "\nInsert a command: ";
-        std::cin >> stringCurrentCommandID;  
+        std::cin >> current_command_id_str;  
 
-        if (stringCurrentCommandID.size() == 1)
+        if (current_command_id_str.size() == 1) // One figure.
         {
-            currentCommandID = stringCurrentCommandID[0] - '0';
-            currentCommand = static_cast<Command>(currentCommandID);
+            current_command_id = current_command_id_str[0] - '0';
+            current_command = static_cast<Command>(current_command_id);
             
             // Command '3' is bound to the move, but the client activates this command by clicking on the cells.
             // So, the command '3' is not allowed! The command '4' is implicit when the window is closed.
-            if ((currentCommand >= 0 && currentCommand < (commandFunctionsSnd.size() - 1)))
+            if (current_command >= 0 && current_command < (command_functions_snd.size() - 1))
             {
-                this->commandFunctionsSnd[currentCommand](currentCommandID);
+                this->command_functions_snd[current_command](current_command_id);
                 continue;
             }
 
@@ -247,77 +244,77 @@ void Client::SendData()
 
 // ------------------------------------------------------------------------------------------------
 
-void Client::JoinCommand(const int currentCommandID)
+void Client::JoinCommand(const int current_command_id)
 {
-    std::string playerName;
+    std::string player_name;
     std::cout << "Insert your name: ";
-    std::cin >> playerName;
+    std::cin >> player_name;
      
-    std::string joinInfo('0' + std::to_string(currentCommandID) + playerName);
-    const char* joinPacket = joinInfo.c_str();  
+    std::string join_info('0' + std::to_string(current_command_id) + player_name);
+    const char* join_packet = join_info.c_str();
 
-    int sentBytes = sendto(socketID, joinPacket, joinPacketSize, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    int sent_bytes = sendto(socket_id, join_packet, join_packet_size, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
     std::cout << "You have attempted to connect to the server!\n";
 }
 
-void Client::CreateRoomCommand(const int currentCommandID)
+void Client::CreateRoomCommand(const int current_command_id)
 {
-    std::string createRoomInfo('0' + std::to_string(currentCommandID));
-    const char* createRoomPacket = createRoomInfo.c_str();
+    std::string create_room_info('0' + std::to_string(current_command_id));
+    const char* create_room_packet = create_room_info.c_str();
 
-    int sentBytes = sendto(socketID, createRoomPacket, createRoomPacketSize, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    int sent_bytes = sendto(socket_id, create_room_packet, create_room_packet_size, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
     std::cout << "You have attempted to create a room into the server!\n";
 }
 
-void Client::ChallengeCommand(const int currentCommandID)
+void Client::ChallengeCommand(const int current_command_id)
 {
-    std::uint32_t roomID;
-    std::cout << "Insert roomID: ";
-    std::cin >> roomID;
+    std::uint32_t room_id;
+    std::cout << "Insert room id: ";
+    std::cin >> room_id;
 
-    std::string roomIDString(std::to_string(roomID));   
-    std::string challengeInfo('0' + std::to_string(currentCommandID) + Utility::GetParsedRoomIDLength(roomIDString, roomIDString.length()) + roomIDString);
-    const char* challengePacket = challengeInfo.c_str(); 
+    std::string room_id_str(std::to_string(room_id));   
+    std::string challenge_info('0' + std::to_string(current_command_id) + Utility::GetParsedRoomIDLength(room_id_str, room_id_str.length()) + room_id_str);
+    const char* challenge_packet = challenge_info.c_str();
 
-    int sentBytes = sendto(socketID, challengePacket, strlen(challengePacket), 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    int sent_bytes = sendto(socket_id, challenge_packet, strlen(challenge_packet), 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
     std::cout << "You have attempted to challenge someone into the server!\n";
 }
 
-void Client::QuitCommand(const int currentCommandID)
+void Client::QuitCommand(const int current_command_id)
 {
-    std::string quitInfo('0' + std::to_string(currentCommandID));
-    const char* quitPacket = quitInfo.c_str(); 
+    std::string quit_info('0' + std::to_string(current_command_id));
+    const char* quit_packet = quit_info.c_str(); 
 
-    int sentBytes = sendto(socketID, quitPacket, quitPacketSize, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
+    int sent_bytes = sendto(socket_id, quit_packet, quit_packet_size, 0, reinterpret_cast<sockaddr*>(&sin), sizeof(sin));
     std::cout << "\nYou have attempted to quit to the server!\n";
 }
 
 // ------------------------------------------------------------------------------------------------
 
-void Client::StartGameCommand(Byte* buffer, const int len)
+void Client::StartGameCommand(char* buffer, const int len)
 {
     this->sprites[0].SetTexture(nullptr);
     this->sprites[1].SetTexture(textures[PLAY_GRID]);
 }
 
-void Client::AnnounceRoomCommand(Byte* buffer, const int len)
+void Client::AnnounceRoomCommand(char* buffer, const int len)
 {
-    std::string roomIDLengthStr;
-    std::memcpy(&roomIDLengthStr, &buffer[headerBytesAmount], roomIDLength);
-    const std::uint32_t roomIDLengthValue = std::stoull(roomIDLengthStr);
+    std::string room_id_length_str;
+    std::memcpy(&room_id_length_str, &buffer[header_bytes_amount], room_id_len);
+    const std::uint32_t room_id_length = std::stoull(room_id_length_str);
 
-    std::string roomIDBytes;
-    std::memcpy(&roomIDBytes, &buffer[headerBytesAmount + roomIDLength], roomIDLengthValue);
+    std::string room_id_bytes;
+    std::memcpy(&room_id_bytes, &buffer[header_bytes_amount + room_id_len], room_id_length);
 
-    int roomID = std::stoi(roomIDBytes);
-    std::cout << "\nAnnouncing room " << roomID;
+    int room_id = std::stoi(room_id_bytes);
+    std::cout << "\nAnnouncing room " << room_id;
 }
 
-void Client::UpdateFieldCommand(Byte* buffer, const int len)
+void Client::UpdateFieldCommand(char* buffer, const int len)
 {
-    if (len != spritesAmount) return;
+    if (len != sprites_amount) return;
 
-    for (size_t i = startingSpriteCellsIndex; i < spritesAmount; i++)
+    for (size_t i = starting_sprite_cells_index; i < sprites_amount; i++)
     {
         switch (buffer[i])
         {
@@ -336,19 +333,19 @@ void Client::UpdateFieldCommand(Byte* buffer, const int len)
                 sprites[i].SetTexture(textures[O_SIGN]);
                 break;
             }
-            case '?': break; // Nothing
+            case '?': break; // Nothing.
         }
     }
 }
 
-void Client::ResetClientCommand(Byte* buffer, const int len)
+void Client::ResetClientCommand(char* buffer, const int len)
 {
     for (auto it = sprites.begin(); it != sprites.end(); ++it)
     {
         it->SetTexture(nullptr);
     }
 
-    sprites[0].SetTexture(textures[BLOCKED_GRID]);  
+    sprites[0].SetTexture(textures[BLOCKED_GRID]);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -365,7 +362,7 @@ void NaiveSDLTexture::SetTexture(SDL_Texture* texture)
 
 SDL_Rect& NaiveSDLTexture::GetTextureBox()
 {
-    return this->textureBox;
+    return this->texture_box;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -379,7 +376,6 @@ void Client::PrintCommands() const
 
 int main(int argc, char** argv)
 {
-    
     Client client = {};
     client.Run();
 

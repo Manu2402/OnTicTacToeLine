@@ -1,5 +1,4 @@
-#ifndef TICTACTOE_SERVER_HPP
-#define TICTACTOE_SERVER_HPP
+#pragma once
 
 #ifdef _WIN32
     #include <WinSock2.h>
@@ -26,30 +25,31 @@ using Room = TTTGame::Room;
 
 namespace TTTServer
 {
-    constexpr std::size_t timeoutSeconds = 300;
-    constexpr std::size_t inGameTimeoutSeconds = 30;
+    constexpr std::size_t timeout_seconds          = 300;
+    constexpr std::size_t in_game_timeout_seconds  = 30;
 
-    constexpr std::size_t headerBytesAmount = 2; // 2 bytes interpreted as 16 bytes
-    constexpr std::size_t playerNameBytesAmount = 20;
-    constexpr std::size_t roomIDLength = 2;
-    constexpr std::size_t cellBytesAmount = 1;
-    constexpr int bufferSize = 64;
+    constexpr std::size_t header_bytes_amount      = 2; // 2 bytes interpreted as 16 bits.
+    constexpr std::size_t player_name_bytes_amount = 20;
+    constexpr std::size_t cell_bytes_amount        = 1;
 
-    constexpr std::size_t resetFieldTime = 2;
+    constexpr std::size_t room_id_len              = 2;
+    constexpr int buffer_size                      = 64;
+
+    constexpr std::size_t reset_field_time         = 2;
 
     // ----------------------------------------------------------------------------------------------
 
-    typedef struct Header
+    typedef struct header_t
     {
         std::uint32_t rid;
         Command command;
-    } Header;
+    } header_t;
 
-    typedef struct Announce
+    typedef struct announce_t
     {
-        Header header;
-        std::uint32_t roomID;
-    } Announce;
+        header_t header;
+        std::uint32_t room_id;
+    } announce_t;
 
     // ----------------------------------------------------------------------------------------------
 
@@ -60,22 +60,22 @@ namespace TTTServer
         {
         public:
             std::string GetIpAddress() const;
-            void SetIpAddress(const std::string& ipAddress);
+            void SetIpAddress(const std::string& ip_address);
             
             int GetPort() const;
             void SetterPort(const int port);
 
-            bool operator==(const Sender& otherSender) const;
+            bool operator==(const Sender& other_sender) const;
             void operator()() { }
 
         private:
-            std::string ipAddress;
+            std::string ip_address;
             int port;
 
-            std::size_t packetsPerSecond;
+            std::size_t packets_per_second;
         };
 
-        // Struct that use the function call operator to hash all the fields into "Sender" class.
+        // Struct that use the "function call operator" to hash all the fields into "Sender" class.
         // All of this in order to use it into "std::unordered_map" as a key.
         struct SenderHash 
         {
@@ -86,14 +86,14 @@ namespace TTTServer
             }
         };
         
-        Server(const char* ipAddress = "192.168.1.102", const int port = 9999, const std::uint32_t timeout = 1000);
+        Server(const char* ip_address = "192.168.1.102", const int port = 9999, const std::uint32_t timeout = 1000);
 
         void Kick(const Sender& sender);
         void DestroyRoom(const Room& room);
         void RemovePlayer(const Sender& sender);
         
         void Tick();
-        void Announces(const int roomID, const bool toRemove);
+        void Announces(const int room_id, const bool to_remove);
         void CheckDeadPeers();
         void CheckEndedChallenges();
 
@@ -104,19 +104,20 @@ namespace TTTServer
         void ResetClient(const Room& room) const;
 
     private:
-        int socketID;
+        int socket_id;
         sockaddr_in sin;
-        std::size_t roomCounter = 100;
         std::unordered_map<Sender, Player, SenderHash> players;
+        
+        std::size_t room_counter = 100;
         std::unordered_map<int, Room> rooms;
-        std::set<int> openedRooms;
+        std::set<int> opened_rooms;
 
-        std::unordered_map<Command, std::function<void(Byte*, Sender&, const int)>> commandFunctions;
-        void JoinCommand(Byte* buffer, Sender& sender, const int len);
-        void CreateRoomCommand(Byte* buffer, Sender& sender, const int len);
-        void ChallengeCommand(Byte* buffer, Sender& sender, const int len);
-        void MoveCommand(Byte* buffer, Sender& sender, const int len);
-        void QuitCommand(Byte* buffer, Sender& sender, const int len);
+        std::unordered_map<Command, std::function<void(char*, Sender&, const int)>> commandFunctions;
+        void JoinCommand(char* buffer, Sender& sender, const int len);
+        void CreateRoomCommand(char* buffer, Sender& sender, const int len);
+        void ChallengeCommand(char* buffer, Sender& sender, const int len);
+        void MoveCommand(char* buffer, Sender& sender, const int len);
+        void QuitCommand(char* buffer, Sender& sender, const int len);
 
         void SendAnnounce(const Sender& sender);
 
@@ -124,5 +125,3 @@ namespace TTTServer
 }
 
 using Server = TTTServer::Server;
-
-#endif // TICTACTOE_SERVER_HPP

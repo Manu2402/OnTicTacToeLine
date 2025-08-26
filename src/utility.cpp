@@ -9,14 +9,14 @@ namespace Utility
         return duration.count();
     }
 
-    std::string GetParsedRoomIDLength(const std::string& roomIDString, const std::size_t roomIDLength)
+    std::string GetParsedRoomIDLength(const std::string& room_id_str, const std::size_t room_id_len)
     {
-        return roomIDLength < twoFiguresFactor ? std::to_string(roomIDString.length()) + "?" : std::to_string(roomIDString.length());
+        return (room_id_len < two_figures_factor) ? std::to_string(room_id_str.length()) + "?" : std::to_string(room_id_str.length());
     }
 
     const char* NetworkException::what() const noexcept
     {
-        // Conversion from std::string to const char*
+        // Conversion from "std::string" to "const char*".
         return message.c_str();
     }
 }

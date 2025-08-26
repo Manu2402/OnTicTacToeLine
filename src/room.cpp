@@ -2,7 +2,7 @@
 
 namespace TTTGame
 {
-    Room::Room(const int roomID, const Player& owner) : roomID(roomID)
+    Room::Room(const int room_id, const Player& owner) : room_id(room_id)
     {
         this->owner = std::make_shared<Player>(owner);
         this->Reset(true);
@@ -18,7 +18,7 @@ namespace TTTGame
         if (removeChallenger)
         { 
             this->challenger = nullptr;
-            this->turnOf = owner;
+            this->turn_of = owner;
         }
         else
         {
@@ -26,33 +26,23 @@ namespace TTTGame
             std::mt19937 generator(random_device()); // Mersenne Twister PRNG
             std::uniform_int_distribution<int> distribution(0, 1); // RNG generator object
 
-            if (distribution(generator)) this->turnOf = owner;
-            else this->turnOf = challenger;
+            if (distribution(generator)) this->turn_of = owner;
+            else this->turn_of = challenger;
 
-            std::cout << "Turn of \"" << this->turnOf->GetName() << "\"!\n";
+            std::cout << "Turn of \"" << this->turn_of->GetName() << "\"!\n";
         }
-        
-        this->playField.fill(nullptr);
+
+        this->play_field.fill(nullptr);
         this->winner = nullptr;
-    }
-
-    bool Room::HasStarted() const // Unused
-    {
-        for (const std::shared_ptr<Player>& cell : playField)
-        {
-            if (!cell) return true;
-        }
-        
-        return false;
     }
 
     // ----------------------------------------------------------------------------------------------
 
-    char Room::ParseSymbol(const std::size_t cellIndex) const
+    char Room::ParseSymbol(const std::size_t cell_index) const
     {
-        if (!playField[cellIndex]) return ' ';
-        if (*playField[cellIndex] == *owner) return 'X';
-        if (*playField[cellIndex] == *challenger) return 'O';
+        if (!play_field[cell_index]) return ' ';
+        if (*play_field[cell_index] == *owner) return 'X';
+        if (*play_field[cell_index] == *challenger) return 'O';
         return '?';
     }
     
@@ -60,80 +50,80 @@ namespace TTTGame
 
     std::shared_ptr<Player> Room::CheckHorizontal(const std::size_t row) const
     {
-        for (std::size_t col = 0; col < fieldSize; col++)
+        for (std::size_t col = 0; col < field_size; col++)
         {
-            if (!this->playField[row * fieldSize + col]) return nullptr;
+            if (!this->play_field[row * field_size + col]) return nullptr;
         }
 
-        std::shared_ptr<Player> currentPlayer = this->playField[row * fieldSize];
-        if (*this->playField[row * fieldSize + 1] != *currentPlayer) return nullptr;
-        if (*this->playField[row * fieldSize + 2] != *currentPlayer) return nullptr;
-        return currentPlayer;
+        std::shared_ptr<Player> current_player = this->play_field[row * field_size];
+        if (*this->play_field[row * field_size + 1] != *current_player) return nullptr;
+        if (*this->play_field[row * field_size + 2] != *current_player) return nullptr;
+        return current_player;
     }
 
     std::shared_ptr<Player> Room::CheckVertical(const std::size_t col) const
     {
-        for (std::size_t row = 0; row < fieldSize; row++)
+        for (std::size_t row = 0; row < field_size; row++)
         {
-            if (!this->playField[row * fieldSize + col]) return nullptr;
+            if (!this->play_field[row * field_size + col]) return nullptr;
         }
 
-        std::shared_ptr<Player> currentPlayer = this->playField[col /* + (0 * fieldSize) */ ];
-        if (*this->playField[col + 1 * fieldSize] != *currentPlayer) return nullptr;
-        if (*this->playField[col + 2 * fieldSize] != *currentPlayer) return nullptr;
-        return currentPlayer;
+        std::shared_ptr<Player> current_player = this->play_field[col /* + (0 * field_size) */ ];
+        if (*this->play_field[col + 1 * field_size] != *current_player) return nullptr;
+        if (*this->play_field[col + 2 * field_size] != *current_player) return nullptr;
+        return current_player;
     }
 
     std::shared_ptr<Player> Room::CheckDiagonalLeft() const
     {
-        if (!this->playField[0]) return nullptr;
-        if (!this->playField[4]) return nullptr;
-        if (!this->playField[8]) return nullptr;
+        if (!this->play_field[0]) return nullptr;
+        if (!this->play_field[4]) return nullptr;
+        if (!this->play_field[8]) return nullptr;
 
-        std::shared_ptr<Player> currentPlayer = this->playField[0];
-        if (*this->playField[4] != *currentPlayer) return nullptr;
-        if (*this->playField[8] != *currentPlayer) return nullptr;
+        std::shared_ptr<Player> current_player = this->play_field[0];
+        if (*this->play_field[4] != *current_player) return nullptr;
+        if (*this->play_field[8] != *current_player) return nullptr;
 
-        return currentPlayer;
+        return current_player;
     }
 
     std::shared_ptr<Player> Room::CheckDiagonalRight() const
     {
-        if (!this->playField[2]) return nullptr;
-        if (!this->playField[4]) return nullptr;
-        if (!this->playField[6]) return nullptr;
+        if (!this->play_field[2]) return nullptr;
+        if (!this->play_field[4]) return nullptr;
+        if (!this->play_field[6]) return nullptr;
 
-        std::shared_ptr<Player> currentPlayer = this->playField[2];
-        if (*this->playField[4] != *currentPlayer) return nullptr;
-        if (*this->playField[6] != *currentPlayer) return nullptr;
+        std::shared_ptr<Player> current_player = this->play_field[2];
+        if (*this->play_field[4] != *current_player) return nullptr;
+        if (*this->play_field[6] != *current_player) return nullptr;
 
-        return currentPlayer;
+        return current_player;
     }
 
     std::shared_ptr<Player> Room::CheckVictory() const
     {
-        std::shared_ptr<Player> winnerPlayer;
+        std::shared_ptr<Player> winner_player;
 
-        for (std::size_t row = 0; row < fieldSize; row++)
+        for (std::size_t row = 0; row < field_size; row++)
         {
-            winnerPlayer = this->CheckHorizontal(row);
-            if (winnerPlayer) return winnerPlayer;
+            winner_player = this->CheckHorizontal(row);
+            if (winner_player) return winner_player;
         }
-        for (std::size_t col = 0; col < fieldSize; col++)
+        for (std::size_t col = 0; col < field_size; col++)
         {
-            winnerPlayer = this->CheckVertical(col);
-            if (winnerPlayer) return winnerPlayer;
+            winner_player = this->CheckVertical(col);
+            if (winner_player) return winner_player;
         }
 
-        winnerPlayer = this->CheckDiagonalLeft();
-        if (winnerPlayer) return winnerPlayer;
+        winner_player = this->CheckDiagonalLeft();
+        if (winner_player) return winner_player;
 
         return this->CheckDiagonalRight();
     }
 
     bool Room::IsDraw() const
     {
-        for (const std::shared_ptr<Player> cell : this->playField)
+        for (const std::shared_ptr<Player> cell : this->play_field)
         {
             if (!cell) return false;
         }
@@ -145,7 +135,7 @@ namespace TTTGame
 
     int Room::GetRoomID() const
     {
-        return this->roomID;
+        return this->room_id;
     }
 
     std::shared_ptr<Player> Room::GetOwner() const
@@ -153,22 +143,22 @@ namespace TTTGame
         return this->owner;
     }
 
-    bool Room::Move(Player& player, const std::size_t cellMove)
+    bool Room::Move(Player& player, const std::size_t cell_move)
     {
-        if (cellMove < 0 || cellMove > 8) return false;
-        if (this->playField[cellMove]) return false;
+        if (cell_move < 0 || cell_move > 8) return false;
+        if (this->play_field[cell_move]) return false;
         if (this->winner) return false;
         if (!this->challenger) return false;
         
         int currentRoomID = player.GetCurrentRoom().first;
 
-        if (currentRoomID != this->roomID) return false;
+        if (currentRoomID != this->room_id) return false;
         if (player != *(this->owner) && player != *this->challenger) return false;
-        if (player != *this->turnOf) return false;
+        if (player != *this->turn_of) return false;
 
-        this->playField[cellMove] = std::make_shared<Player>(player);
+        this->play_field[cell_move] = std::make_shared<Player>(player);
         this->winner = this->CheckVictory();
-        this->turnOf = (this->turnOf == this->owner) ? this->challenger : this->owner; 
+        this->turn_of = (this->turn_of == this->owner) ? this->challenger : this->owner; 
 
         return true;
     }
@@ -187,14 +177,14 @@ namespace TTTGame
 
     // ----------------------------------------------------------------------------------------------
 
-    void Room::SetEndedChallengeTimestamp(const std::size_t endedChallengeTimestamp)
+    void Room::SetEndedChallengeTimestamp(const std::size_t ended_challenge_timestamp)
     {
-        this->endedChallengeTimeStamp = endedChallengeTimestamp;
+        this->ended_challenge_timestamp = ended_challenge_timestamp;
     }
 
     std::size_t Room::GetEndedChallengeTimestamp() const
     {
-        return this->endedChallengeTimeStamp;
+        return this->ended_challenge_timestamp;
     }
 
     // ----------------------------------------------------------------------------------------------
@@ -206,13 +196,13 @@ namespace TTTGame
 
     // ----------------------------------------------------------------------------------------------
 
-    bool Room::operator==(const Room& otherRoom)
+    bool Room::operator==(const Room& other_room)
     {
-        return this->roomID == otherRoom.roomID;
+        return this->room_id == other_room.room_id;
     }
 
-    bool Room::operator!=(const Room& otherRoom)
+    bool Room::operator!=(const Room& other_room)
     {
-        return !(*this == otherRoom);
+        return !(*this == other_room);
     }
 }

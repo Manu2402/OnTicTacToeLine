@@ -1,5 +1,4 @@
-#ifndef TICTACTOE_CLIENT_HPP
-#define TICTACTOE_CLIENT_HPP
+#pragma once
 
 #ifdef _WIN32
     #include <WinSock2.h>
@@ -25,53 +24,51 @@
 
 namespace TTTClient
 {
-    const std::vector<std::pair<int, int>> cellCoordinates = 
+    const std::vector<std::pair<int, int>> cell_coordinates = 
     { 
-        { 12, 12 }, { 179, 12 }, { 345, 12 }, 
+        { 12, 12 },  { 179, 12 },  { 345, 12 }, 
         { 12, 178 }, { 179, 178 }, { 345, 178 }, 
-        { 12, 344 }, { 179, 344 }, { 345, 344 } 
+        { 12, 344 }, { 179, 344 }, { 345, 344 }
     };
 
-    const std::pair<int, int> symbolsTextureSize = { 155, 155 };
+    const std::pair<int, int> symbols_texture_size = { 155, 155 };
 
     enum TextureAsset : std::uint32_t 
     { 
         BLOCKED_GRID = 0, 
-        PLAY_GRID = 1, 
-        X_SIGN = 2, 
-        O_SIGN = 3
+        PLAY_GRID    = 1, 
+        X_SIGN       = 2, 
+        O_SIGN       = 3
     };
 
     // To avoid "race condition" about both main thread, "ReceiveData" thread and "SendData" thread.
     std::atomic<bool> running(true);
 
     // Packet Protocol: >[I][I][...]
-    constexpr std::size_t joinPacketSize = 22;
-    constexpr std::size_t createRoomPacketSize = 2;
-    constexpr std::size_t quitPacketSize = 2;
-    constexpr std::size_t headerBytesAmount = 2;
-    constexpr std::size_t roomIDLength = 2;
-    constexpr int bufferSize = 64;
+    constexpr int buffer_size                      = 64;
+    constexpr std::size_t join_packet_size        = 22;
+    constexpr std::size_t create_room_packet_size = 2;
+    constexpr std::size_t quit_packet_size        = 2;
+    constexpr std::size_t header_bytes_amount     = 2;
+    constexpr std::size_t room_id_len             = 2;
 
-    constexpr std::size_t spritesAmount = 11;
     // 0 -----> Blocked Grid
     // 1 -----> Play Grid
     // 2/11 --> Cells
-    constexpr std::size_t startingSpriteCellsIndex = 2;
-    constexpr std::size_t spritesCellAmount = spritesAmount - startingSpriteCellsIndex;
+    constexpr std::size_t sprites_amount = 11;
+    constexpr std::size_t starting_sprite_cells_index = 2;
+    constexpr std::size_t sprites_cell_amount = sprites_amount - starting_sprite_cells_index;
 
-    using Byte = char;
-
-    typedef struct Header
+    typedef struct header_t
     {
         std::uint32_t rid;
         Command command;
-    } Header;
+    } header_t;
 
     class NaiveSDLTexture
     {
     public:
-        NaiveSDLTexture(SDL_Texture* texture, SDL_Rect textureBox) : texture(texture), textureBox(textureBox) { }
+        NaiveSDLTexture(SDL_Texture* texture, SDL_Rect texture_box) : texture(texture), texture_box(texture_box) { }
             
         SDL_Texture* GetTexture() const; 
         void SetTexture(SDL_Texture* texture);
@@ -80,7 +77,7 @@ namespace TTTClient
 
     private:
         SDL_Texture* texture;
-        SDL_Rect textureBox;
+        SDL_Rect texture_box;
 
     };
 
@@ -93,29 +90,30 @@ namespace TTTClient
         void Run();
 
         void InitSprites();
-        int ClickedOnWhatCell(SDL_Event* event);
+
+        int ClickedOnWhichCell(SDL_Event* event);
 
         void ReceiveData();
         void SendData();
 
     private:
-        int socketID;
+        int socket_id;
         sockaddr_in sin;
 
-        std::unordered_map<Command, std::function<void(const int)>> commandFunctionsSnd;
-        void JoinCommand(const int currentCommandID);
-        void CreateRoomCommand(const int currentCommandID);
-        void ChallengeCommand(const int currentCommandID);
-        void QuitCommand(const int currentCommandID);
+        std::unordered_map<Command, std::function<void(const int)>> command_functions_snd;
+        void JoinCommand(const int current_command_id);
+        void CreateRoomCommand(const int current_command_id);
+        void ChallengeCommand(const int current_command_id);
+        void QuitCommand(const int current_command_id);
 
-        std::unordered_map<Command, std::function<void(Byte*, const int)>> commandFunctionsRcv;
-        void StartGameCommand(Byte* buffer, const int len);
-        void AnnounceRoomCommand(Byte* buffer, const int len);
-        void UpdateFieldCommand(Byte* buffer, const int len);
-        void ResetClientCommand(Byte* buffer, const int len);
+        std::unordered_map<Command, std::function<void(char*, const int)>> command_functions_rcv;
+        void StartGameCommand(char* buffer, const int len);
+        void AnnounceRoomCommand(char* buffer, const int len);
+        void UpdateFieldCommand(char* buffer, const int len);
+        void ResetClientCommand(char* buffer, const int len);
 
-        std::thread recvThread;
-        std::thread sendThread;
+        std::thread recv_thread;
+        std::thread send_thread;
 
         SDL_Window* window;
         SDL_Renderer* renderer;
@@ -129,5 +127,3 @@ namespace TTTClient
 
 using Client = TTTClient::Client;
 using NaiveSDLTexture = TTTClient::NaiveSDLTexture;
-
-#endif //TICTACTOE_CLIENT_HPP

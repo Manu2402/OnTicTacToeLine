@@ -1,5 +1,4 @@
-#ifndef UTILITY_HPP
-#define UTILITY_HPP
+#pragma once
 
 #include <string>
 #include <chrono>
@@ -7,12 +6,12 @@
 
 namespace Utility
 {
-    constexpr std::size_t twoFiguresFactor = 10;
+    constexpr std::size_t two_figures_factor = 10;
 
     std::size_t GetNowTime();
 
-    // Handle multiple bytes if the number of figures about the "room ID" is greater than nine (as 10).
-    std::string GetParsedRoomIDLength(const std::string& roomIDString, const std::size_t roomIDLength);
+    // Handle multiple bytes if the number of figures about the "room_id" is greater than 9 (as 10).
+    std::string GetParsedRoomIDLength(const std::string& room_id_str, const std::size_t room_id_len);
 
     class NetworkException : public std::runtime_error
     {
@@ -48,7 +47,3 @@ namespace Utility
 
 using NetworkException = Utility::NetworkException;
 using Command = Utility::Command;
-
-using Byte = char;
-
-#endif // UTILITY_HPP

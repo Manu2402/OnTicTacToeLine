@@ -3,48 +3,48 @@
 
 namespace TTTGame
 {
-    Player::Player(const std::string& playerName) : playerName(playerName), currentRoom{-1, true}, lastPacketTimeStamp(Utility::GetNowTime()) { }
+    Player::Player(const std::string& player_name) : player_name(player_name), current_room { -1, true }, last_packet_timestamp(Utility::GetNowTime()) { }
 
     // ----------------------------------------------------------------------------------------------
 
     std::pair<int, bool> Player::GetCurrentRoom() const
     {
-        return this->currentRoom;
+        return this->current_room;
     }
 
-    void Player::SetCurrentRoom(std::pair<int, bool>& currentRoom)
+    void Player::SetCurrentRoom(std::pair<int, bool>& current_room)
     {
-        this->currentRoom = currentRoom;
+        this->current_room = current_room;
     }
 
     // ----------------------------------------------------------------------------------------------
 
     const std::string& Player::GetName() const
     {
-        return this->playerName;
+        return this->player_name;
     }
 
     // ----------------------------------------------------------------------------------------------
 
     std::size_t Player::GetLastPacketTimeStamp() const
     {
-        return this->lastPacketTimeStamp;
+        return this->last_packet_timestamp;
     }
 
     void Player::SetLastPacketTimeStamp()
     {
-        this->lastPacketTimeStamp = Utility::GetNowTime();
+        this->last_packet_timestamp = Utility::GetNowTime();
     }
 
     // ----------------------------------------------------------------------------------------------
     
-    bool Player::operator==(const Player& otherPlayer)
+    bool Player::operator==(const Player& other_player)
     {
-        return this->playerName.compare(otherPlayer.playerName) == 0;
+        return this->player_name.compare(other_player.player_name) == 0;
     }
 
-    bool Player::operator!=(const Player& otherPlayer)
+    bool Player::operator!=(const Player& other_player)
     {
-        return !(*this == otherPlayer);
+        return !(*this == other_player);
     }
 }
