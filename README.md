@@ -53,8 +53,8 @@ clang src/tictactoe_server.cpp src/room.cpp src/player.cpp src/utility.cpp -o ti
 
 ### Play
 
-1. Launch the server: **'tictactoe_server.exe'**  
-2. Launch one or more clients: **'tictactoe_client.exe'**  
+1. Launch the server: **`tictactoe_server.exe`**  
+2. Launch one or more clients: **`tictactoe_client.exe`**  
 3. Follow the commands list in order to join in the server, create a room (or join in a room) and play!
 
 ---
