@@ -269,7 +269,7 @@ void Client::CreateRoomCommand(const int current_command_id)
 void Client::ChallengeCommand(const int current_command_id)
 {
     std::uint32_t room_id;
-    std::cout << "Insert room id: ";
+    std::cout << "Insert room ID: ";
     std::cin >> room_id;
 
     std::string room_id_str(std::to_string(room_id));   
